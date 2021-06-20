@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+<!--------------- css links ---------------->
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./node_modules/bootstrap/dist/css/bootstrap.css">
+<link rel="stylesheet" href="./node_modules/bootstrap-icons/font/bootstrap-icons.css">
+<style>
+    html{
+        background-image: url('/resources/images/carosal.jpg');
+        background-repeat: no-repeat;
+        background-size: cover; 
+        background: linear-gradient(45deg, fuchsia, lightgreen);
+    }
+    .divP {
+        border:2px solid green;
+        background: linear-gradient(45deg,blueviolet,pink);
+    }
+    body{
+        background: linear-gradient(0deg,grey,white);
+        }
+    .divCont{
+        background:linear-gradient(279deg ,purple,white,blue,magenta);
+    }
+    .divXls{
+        background:linear-gradient(8deg ,#e78ae7,#ef8699,#75ff75);
+    }
+</style>
+</head>
+<body class="container-fluid">
+<div class="divP mx-4 my-4 px-4 py-4"> 
+   <p> This is Sample Page By @plussunilsingh</p>
+</div>
+<div class="divCont mx-4 my-4 p-4 table-responsive">
+    <h3>Show Excel Data</h3>
+    <input type="file" id="excelfile" />  
+   <input type="button" id="viewfile" value="Export To Table" onclick="ExportToTable()" />  
+      <br />  
+      <br />  
+   <table id="exceltable">  
+</table>
+</div>
+<div class="divCont mx-4 my-4 p-4 table-responsive">
+    <h3>Daily Schedule</h3>
+    <p class="timetable-p"></p> 
+</div>
+
+<div class="divXls mx-4 my-4 p-4 table-responsive">
+    <h3>Excel Data Records Daily Schedule</h3>
+    <p class="xmlData"></p> 
+</div>
+
+
+
+
+<!------------ script links -------------->
+<script src="./node_modules/jquery/dist/jquery.js"></script>
+<script>src="./node_modules/bootstrap/dist/js/bootstrap.bundle.js"</script>
+<!-------------Xls doc links-------------->
+<script lang="javascript" src="./node_modules/xlsx/dist/xlsx.full.min.js"></script>
+<!-------------Xls Read File-------------->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/1.1.9/js/libs/jquery-1.10.2.min.js" type="text/javascript"></script>  
+<script src="https://pagecdn.io/lib/js-xlsx/v0.16.5/xlsx.core.min.js"></script>  
+<script src="https://pagecdn.io/lib/js-xlsx/v0.16.5/xlsx.js"></script> 
+<!-------------end links------------------->
+<script>
+$(document).ready(function(){
+    //console.log("hi i m ready...")
+    //read txt file
+    $.get('timetable', function(data) {
+    data=data.split("\n");
+    let jsonObj=JSON.stringify(data);  
+    let table='<table class="table"> <thead><tr><th scope="col">#</th><th scope="col">Subject-Name</th><th scope="col">Time Table</th></thead><tbody>';
+    $.each(data, function(key,valueObj){
+    if(!(valueObj!='undefined'&&$.trim(valueObj.toString())=='')){
+    table+='<tr>';
+    //console.log(valueObj); 
+    table+='<td>'+(key+1)+'</td>';
+    table+='<td>'+valueObj+'</td>';
+    table+='<td>'+valueObj+'</td></tr>';
+    }
+    });
+    table+='</tbody></table>';
+    $('.timetable-p').append(table); 
+});
+});
+
+//xls read function    var dvExcel = $(".xmlData");
+
+function ExportToTable() {  
+     var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.xlsx|.xls)$/;  
+     /*Checks whether the file is a valid excel file*/  
+     if (regex.test($("#excelfile").val().toLowerCase())) {  
+         var xlsxflag = false; /*Flag for checking whether excel is .xls format or .xlsx format*/  
+         if ($("#excelfile").val().toLowerCase().indexOf(".xlsx") > 0) {  
+             xlsxflag = true;  
+         }  
+         /*Checks whether the browser supports HTML5*/  
+         if (typeof (FileReader) != "undefined") {  
+             var reader = new FileReader();  
+             reader.onload = function (e) {  
+                 var data = e.target.result;  
+                 /*Converts the excel data in to object*/  
+                 if (xlsxflag) {  
+                     var workbook = XLSX.read(data, { type: 'binary' });  
+                 }  
+                 else {  
+                     var workbook = XLS.read(data, { type: 'binary' });  
+                 }  
+                 /*Gets all the sheetnames of excel in to a variable*/  
+                 var sheet_name_list = workbook.SheetNames;  
+               
+                 var cnt = 0; /*This is used for restricting the script to consider only first sheet of excel*/  
+                /*$.each(workbook.Sheets.Sheet1, function(key,valueObj){
+                    console.log(key);
+                    console.log(valueObj); 
+                });*/
+                console.log("=====");
+                 sheet_name_list.forEach(function (y) {
+                      /*Iterate through all sheets*/  
+                    /*Convert the cell value to Json*/  
+                     if (xlsxflag) {  
+                         var exceljson = XLSX.utils.sheet_to_json(workbook.Sheets[y]);  
+                     }  
+                     else {  
+                         var exceljson = XLS.utils.sheet_to_row_object_array(workbook.Sheets[y]);  
+                     }  
+                     if (exceljson.length > 0 && cnt == 0) {  
+                         console.log(exceljson);
+                         BindTable(exceljson, '#exceltable');  
+                         cnt++;  
+                     }  
+                 });  
+                 $('#exceltable').show();  
+             }  
+             if (xlsxflag) {/*If excel file is .xlsx extension than creates a Array Buffer from excel*/  
+                 reader.readAsArrayBuffer($("#excelfile")[0].files[0]);  
+             }  
+             else {  
+                 reader.readAsBinaryString($("#excelfile")[0].files[0]);  
+             }  
+         }  
+         else {  
+             alert("Sorry! Your browser does not support HTML5!");  
+         }  
+     }  
+     else {  
+         alert("Please upload a valid Excel file!");  
+     }  
+ }  
+
+ function BindTable(jsondata, tableid) {/*Function used to convert the JSON array to Html Table*/  
+     var columns = BindTableHeader(jsondata, tableid); /*Gets all the column headings of Excel*/  
+     for (var i = 0; i < jsondata.length; i++) {  
+         var row$ = $('<tr/>');  
+         for (var colIndex = 0; colIndex < columns.length; colIndex++) {  
+             var cellValue = jsondata[i][columns[colIndex]];  
+             if (cellValue == null)  
+                 cellValue = "";  
+             row$.append($('<td/>').html(cellValue));  
+         }  
+         $(tableid).append(row$);  
+     }  
+ }  
+ function BindTableHeader(jsondata, tableid) {/*Function used to get all column names from JSON and bind the html table header*/  
+     var columnSet = [];  
+     var headerTr$ = $('<tr/>');  
+     for (var i = 0; i < jsondata.length; i++) {  
+         var rowHash = jsondata[i];  
+         for (var key in rowHash) {  
+             if (rowHash.hasOwnProperty(key)) {  
+                 if ($.inArray(key, columnSet) == -1) {/*Adding each unique column names to a variable array*/  
+                     columnSet.push(key);  
+                     headerTr$.append($('<th/>').html(key));  
+                 }  
+             }  
+         }  
+     }  
+     $(tableid).append(headerTr$);  
+     return columnSet;  
+ }  
+</script>
+</body>
+</html>
